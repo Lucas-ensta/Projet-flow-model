@@ -1,6 +1,6 @@
 
 
-"""Nous allons modélisier l'écoulement d'un fluide incompressible en 2D dans un tube avec un flux entrant dans le domaine de simulation
+"""Nous allons modélisier l'écoulement d'un fluide en 2D dans un tube avec un flux entrant dans le domaine de simulation
 et donc un flux sortant
 Source : Chaine youtube "Machine learning and simulation" 
  
@@ -19,7 +19,7 @@ Source : Chaine youtube "Machine learning and simulation"
     Equation de Navier-Stokes : ρ ( ∂U/∂t + (U ⋅ ∇) U ) = -∇p + ν ∇²U + f
 
 2) Grille de simulation : même principe que la grille de Yee -
-    superposer la grille du champ des vitesse avec le champ des pression avec un incrément spaciale entre les 2 : 
+    superposer la grille du champ des vitesse avec le champ des pression avec un incrément spatial entre les 2 : 
     
     + : sommet d'une cellule de la grille 
     ● : sommet de la grille du champ de pression (là où on stock les valeurs)
@@ -50,7 +50,7 @@ Source : Chaine youtube "Machine learning and simulation"
      - u : N_x par N_y-1
      - v : N_x-1 par N_y
 
-3) Conditions au limites : 
+3) Conditions aux limites : 
     Problème de la méthode FDVD -> il faut rajouter deux colones aux extremintés droites et gauche du domaine ainsi que deux lignes 
     en haut et en bas du domaine pour pouvoir définir correctement les conditions aux limmites avec la méthode des différences finie
     centrée. 
@@ -59,6 +59,7 @@ Source : Chaine youtube "Machine learning and simulation"
         - p : N_x+1 par N_y+1
         - u : N_x par N_y+1
         - v : N_x+1 par N_y
+
 
 
 
