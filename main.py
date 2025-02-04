@@ -22,8 +22,8 @@ Source : Chaine youtube "Machine learning and simulation"
     superposer la grille du champ des vitesse avec le champ des pression avec un incrément spaciale entre les 2 : 
     
     + : sommet d'une cellule de la grille 
-    ● : sommet de la grille du champ de pression
-    → ou ↑ : sommet de la grille du champ des vitesses 
+    ● : sommet de la grille du champ de pression (là où on stock les valeurs)
+    → ou ↑ : sommet de la grille du champ des vitesses (idem)
     0 : origine du repère 
    
         +  -  ↑  -  +  -  ↑  -  +  -  ↑  -  +  -  ↑  -  +  -  ↑  -  +  -  ↑  -  +  -  ↑  -  +   
