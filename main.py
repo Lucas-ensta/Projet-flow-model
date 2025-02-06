@@ -16,7 +16,7 @@ Source : Chaine youtube "Machine learning and simulation"
 
     Equation d'incompressibilité :  ∇U = 0 
     
-    Equation de Navier-Stokes : ρ ( ∂U/∂t + (U ⋅ ∇) U ) = -∇p + ν ∇²U + f
+    Equation de Navier-Stokes : ρ ( ∂U/∂t + (U  ∇) U ) = -∇p + ν ∇²U + f
 
 2) Grille de simulation : même principe que la grille de Yee -
     superposer la grille du champ des vitesse avec le champ des pression avec un incrément spatial entre les 2 : 
@@ -60,8 +60,40 @@ Source : Chaine youtube "Machine learning and simulation"
         - u : N_x par N_y+1
         - v : N_x+1 par N_y
 
+4) Implémentation : 
 
+    4.1 - Initialisation : 
+        u : initialisé à 1 partout 
+        v : initialisé à 0 
+        p : initialisé à 0 
 
+    4.2 - Mise à jour du champ u (+ Conditions aux limites)
+    
+        Equation N-S 
+
+    4.3 - Mise à jour du champ v (+conditions aux limites)
+
+        Idem 
+
+    4.4 - Calculer la divergence des vitesses provisoires 
+      
+      d = ∂u/∂x + ∂v/∂y
+
+    4.5 - Calculer la correction de la pression q pour assurer la condition d'incompressibilité (Problème de Poisson) :
+
+      Résoudre : ∇²q = d / dt (avec une condition aux limite de Neumann pour les parois de notre domaine sauf à droite, car flux
+      sortant) 
+
+    4.6 - Mettre à jour le champ de pression 
+
+      p = p + q
+
+    4.7 - Calcul des vitesses pour avoir un écoulement incompressible : 
+
+      u = u - dt ⋅ ∂q/∂x 
+      v = v - dt ⋅ ∂q/∂y   
+
+    4.8 - Recommencer jusqu'à l'état stable 
 
 
 """
