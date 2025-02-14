@@ -18,8 +18,8 @@ Source : Chaine youtube "Machine learning and simulation"
     
     Equation de Navier-Stokes : ρ ( ∂U/∂t + (U  ∇) U ) = -∇p + ν ∇²U + f
 
-2) Grille de simulation : même principe que la grille de Yee -
-    superposer la grille du champ des vitesse avec le champ des pression avec un incrément spatial entre les 2 : 
+2) Grille de simulation = superposition "décalée" de plusieurs grilles : même principe que la grille de Yee -
+    Ici superposer la grille du champ des vitesse avec le champ des pression avec un incrément spatial entre les 2 : 
     
     + : sommet d'une cellule de la grille 
     ● : sommet de la grille du champ de pression (là où on stock les valeurs)
@@ -46,13 +46,13 @@ Source : Chaine youtube "Machine learning and simulation"
      - v est de taille 4x7 
     
     Généralisation - pour un espace de simulation de taille N_x par N_y 
-     - p : N_x-1 par N_y-1
-     - u : N_x par N_y-1
+     - p : N_x-1 par N_y-1 (Attention à inverser x et y en coordonée matricielle : nx = nb colonnes et ny = nb lignes)
+     - u : N_x par N_y-1 
      - v : N_x-1 par N_y
 
 3) Conditions aux limites : 
-    Problème de la méthode FDVD -> il faut rajouter deux colones aux extremintés droites et gauche du domaine ainsi que deux lignes 
-    en haut et en bas du domaine pour pouvoir définir correctement les conditions aux limmites avec la méthode des différences finie
+    Problème de la Grille décallé -> il faut rajouter deux colones aux extremintés droites et gauche du domaine ainsi que deux lignes 
+    en haut et en bas du domaine pour pouvoir définir correctement les conditions aux limites avec la méthode des différences finie
     centrée. 
 
     Les tailles réelles de nos variables seront donc dans le cas générale : 
@@ -96,8 +96,75 @@ Source : Chaine youtube "Machine learning and simulation"
     4.8 - Recommencer jusqu'à l'état stable 
 
 
+    
+Info prtaique : pour changer de repertoire de travail : ecrire cd .. dans le terminal, et ls pour voir les fichiers du repertoire
+actuelle
+pour entrer dans répertoire : cd .backslash nomrepértoire
 """
 
-print("push pls")
+import numpy as np 
+import matplotlib as plt 
+import cmasher as cmr
+from tqdm import tqdm
+
+
+N_POINTS_Y = 15
+ASPECT_RATIO = 10 # rapport longueur / largeur du domaine 
+KINEMATIC_VISCOSITY = 0.01 
+TIME_STEP_LENGTH = 0.0001
+N_TIME_STEPS = 5000
+PLOT_EVERY = 50
+
+N_PRESSURE_POISSON_ITERATIONS = 50  # Utile pour l'étape 4.5
+
+def main():
+    cell_lenght = 1.0 / (N_POINTS_Y -1) 
+
+    n_points_x = (N_POINTS_Y - 1) * ASPECT_RATIO + 1
+
+    x_range = np.linspace(0.0, 1.0 * ASPECT_RATIO, n_points_x) 
+    y_range = np.linspace(0.0, 1.0 * ASPECT_RATIO, N_POINTS_Y)
+
+    coordinate_x, coordinate_y = np.meshgrid(x_range, y_range) #création du maillage 
+    
+    # Conditions initiales :
+    velocity_x_prev = np.ones((N_POINTS_Y + 1, n_points_x)) # _prev pour previous pour condition init 
+    
+    """On veut imposer une condition d'adhérences aux frontière haute et basse du domaine mais la grille des v_x n'est pas défini
+      en ces points (du fait de notre grille de simu décalé), on arrange cela en calculant la valeur moyenne entre la valeur à l'int
+      et celle à l'ext du domaine 
+    """
+    # On veut (u_ext + u_int)/2 = 0 soit u_ext = - u_int : 
+    velocity_x_prev[0,:] = - velocity_x_prev[1,:]
+    velocity_x_prev[-1,:] = - velocity_x_prev[-2,:]
+
+    velocity_y_prev = np.zeros((N_POINTS_Y, n_points_x + 1))
+
+    pressure_prev = np.zeros((N_POINTS_Y + 1, n_points_x +1))
+
+    #Tableaus utiles pour le déroulement de la simu : 
+
+    velocity_x_tent = np.zeros_like(velocity_x_prev) #_tent pour tentative = provisoir en français 
+    velocity_x_next = np.zeros_like(velocity_x_prev)
+
+    velocity_y_tent = np.zeros_like(velocity_y_prev)
+    velocity_y_next = np.zeros_like(velocity_x_prev)
+
+    
+    for iter in tqdm(range(N_TIME_STEPS)) : #here we go :D 
+        
+    
+
+
+
+     
+
+
+
+if __name__== "__main__": 
+    main()
+    
+
+
 
 
