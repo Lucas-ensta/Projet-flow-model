@@ -11,7 +11,7 @@ Source : Chaine youtube "Machine learning and simulation"
     v : composante de la vitesse selon y (↑) 
     p : la pression 
     ρ : masse volumique 
-    ν : viscosité dynamique  
+    ν : viscosité cinématique  
     f : Force volumique externe (ici nulle)
 
     Equation d'incompressibilité :  ∇U = 0 
@@ -69,7 +69,7 @@ Source : Chaine youtube "Machine learning and simulation"
 
     4.2 - Mise à jour du champ u (+ Conditions aux limites)
     
-        Equation N-S 
+        u = u + dt * (-∂p/∂x + ν ∇²u - ∂u²/∂x - v ∂u/∂y ) 
 
     4.3 - Mise à jour du champ v (+conditions aux limites)
 
@@ -152,7 +152,154 @@ def main():
 
     
     for iter in tqdm(range(N_TIME_STEPS)) : #here we go :D 
+        #Update de la vitesse intéreur u (composante v_x)
+        diffusion_x = KINEMATIC_VISCOSITY *(
+            
+            (
+                velocity_x_prev[1:-1, 2: ]            # Approximation du Laplacien en 2D avec le schéma des différences finies
+                +
+                velocity_x_prev[2:, 1:-1]
+                +
+                velocity_x_prev[1:-1, :-2]
+                +
+                velocity_x_prev[ :-2, 1:-1]
+                -
+                4 * velocity_x_prev[1:-1, 1:-1]
+            ) / (
+                cell_lenght**2
+            )
+        )
+        convection_x = (
+            (
+                velocity_x_prev[1:-1, 2: ]**2    # schéma différences finies centré 
+                -
+                velocity_x_prev[1:-1, :-2]**2
+            ) / (
+                2 * cell_lenght
+            )
+            +
+            (
+                velocity_x_prev[2: , 1:-1]
+                -
+                velocity_x_prev[ :-2, 1:-1]
+            ) / (
+                2 * cell_lenght                   # Pour multiplier u par v sur la grille décalé, on fait la moyenne des 4 v autour d'un u  
+            ) 
+            * 
+            (
+                velocity_y_prev[ :-1, 1:-2]
+                +
+                velocity_y_prev[ :-1, 2:-1]
+                +
+                velocity_y_prev[1: , 1:-2]
+                +
+                velocity_y_prev[1: , 2:-1]
+            ) / 4
+        )
+        pressure_gradient_x = (
+            (
+            pressure_prev[1:-1, 2:-1]
+            -
+            pressure_prev[1:-1, 1:-2]
+            ) / (
+                cell_lenght
+            )
+        )
+
+        velocity_x_tent[1:-1, 1:-1] = (
+            velocity_x_prev[1:-1, 1:-1]
+            +
+            TIME_STEP_LENGTH
+            *
+            (
+                -
+                pressure_gradient_x
+                +
+                diffusion_x
+                -
+                convection_x
+            )
+        )
+
+        #On applique les conditions aux limites 
+        velocity_x_tent[1:-1, 0] = 1.0
+        velocity_x_tent[1:-1, -1] = velocity_x_tent[1:-1, -2]   #Pour avoir condition Neumann (derivé selon x de v_x nulle en sortie de tube) On ecris simplement qu'il y a égalité entre la valeur (,-1) a la frontiere et sa voisine (,-2)              
+        velocity_x_tent[0, :] = - velocity_x_tent[1, :] #condition adhérence en bas 
+        velocity_x_tent[-1,:] = - velocity_x_tent[-2, :] #idem en haut
         
+        #Update pour la vitesse v (composante v_y)
+        diffusion_y = KINEMATIC_VISCOSITY * (
+            (
+                +
+                velocity_y_prev[1:-1, 2: ]
+                +
+                velocity_y_prev[2: , 1:-1]
+                +
+                velocity_y_prev[1:-1, :-2]
+                +
+                velocity_y_prev[ :-2, 1:-1]
+                -
+                4 * velocity_y_prev[1:-1, 1:-1]
+            ) / (
+               cell_lenght**2 
+            )
+        )
+        convection_y = (
+            (
+                velocity_x_prev[2:-1, 1: ]
+                +
+                velocity_x_prev[2:-1, :-1]
+                +
+                velocity_x_prev[1:-2, 1: ]
+                +
+                velocity_x_prev[1:-2, :-1]
+            ) / 4
+            *
+            (
+                velocity_y_prev[1:-1, 2: ]
+                -
+                velocity_y_prev[1:-1, :-2]
+            ) / (
+                2 * cell_lenght
+            )
+            +
+            (
+                velocity_y_prev[2: , 1:-1]**2
+                -
+                velocity_y_prev[ :-2, 1:-1]**2
+            ) / (
+                2 * cell_lenght
+            )
+        )
+        pressure_gradient_y = (
+            (
+                pressure_prev[2:-1, 1:-1]
+                -
+                pressure_prev[1:-2, 1:-1]
+            ) / (
+                cell_lenght
+            )
+        )
+
+        velocity_y_tent[1:-1, 1:-1] = (
+            velocity_y_prev[1:-1, 1:-1]
+            +
+            TIME_STEP_LENGTH
+            *
+            (
+                -pressure_gradient_y
+                +
+                diffusion_y
+                -
+                convection_y
+            )
+        )
+
+        #Conditions aux limites : 
+        velocity_y_tent[1:-1, 0] = - velocity_y_tent[1:-1, 1] # V_y nul en entrée de tube 
+        velocity_y_tent[1:-1, -1] = velocity_y_tent[1:-1, -2]  # condition neumann en sortie de tube
+        velocity_y_tent[0, : ] = 0 
+        velocity_y_tent[-1, : ] = 0 
     
 
 
