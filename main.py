@@ -103,7 +103,7 @@ pour entrer dans répertoire : cd .backslash nomrepértoire
 """
 
 import numpy as np 
-import matplotlib as plt 
+import matplotlib.pyplot as plt 
 import cmasher as cmr
 from tqdm import tqdm
 
@@ -148,7 +148,7 @@ def main():
     velocity_x_next = np.zeros_like(velocity_x_prev)
 
     velocity_y_tent = np.zeros_like(velocity_y_prev)
-    velocity_y_next = np.zeros_like(velocity_x_prev)
+    velocity_y_next = np.zeros_like(velocity_y_prev)
 
     
     for iter in tqdm(range(N_TIME_STEPS)) : #here we go :D 
@@ -301,16 +301,153 @@ def main():
         velocity_y_tent[0, : ] = 0 
         velocity_y_tent[-1, : ] = 0 
     
+        # Etape 4.4 : Implementer la divergence comme si c'était la pression (a droite) dans le pb de poisson 
+
+        divergence = (
+            (
+                velocity_x_tent[1:-1, 1: ]
+                -
+                velocity_x_tent[1:-1, :-1]
+            ) / (
+                cell_lenght
+            )
+            +
+            (
+                velocity_y_tent[1:, 1:-1]
+                -
+                velocity_y_tent[ :-1, 1:-1]
+            ) / (
+                cell_lenght
+            )
+        )
+        pressure_poisson_rhs = divergence / TIME_STEP_LENGTH
+
+        # Etape 4.5 : resoudre l'equation de poisson (pour avoir la correction de pression)
+
+        pressure_correction_prev = np.zeros_like(pressure_prev)
+
+        for _ in range (N_PRESSURE_POISSON_ITERATIONS):
+            pressure_correction_next = np.zeros_like(pressure_correction_prev)
+            pressure_correction_next[1:-1, 1:-1] = 1/4 * (
+                +
+                pressure_correction_prev[1:-1, 2: ]
+                +
+                pressure_correction_prev[2: , 1:-1]
+                +
+                pressure_correction_prev[1:-1, :-2]
+                +
+                pressure_correction_prev[ :-2, 1:-1]
+                -
+                cell_lenght**2
+                *
+                pressure_poisson_rhs
+            )
+            #On applique les condition limites de prerssions : Condition neumann homogène partout sauf 
+            # à droite : condition de Dirichlet homogène (mieux pour la convergence de l'algo)
+
+            pressure_correction_next[1:-1, 0] = pressure_correction_next[1:-1, 1]       # à gauche, Neumann (inlet)
+            pressure_correction_next[1:-1, -1] = -pressure_correction_next[1:-1, -2]     # a droie, Dirichlet(oulet)    
+            pressure_correction_next[0, :] = pressure_correction_next[1, :]
+            pressure_correction_next[-1, :] = pressure_correction_next[-2, :]
+
+            # lissage 
+            pressure_correction_prev = pressure_correction_next
+
+            # Etape 4.6 : Mise à jour de la pression 
+
+            pressure_next = pressure_prev + pressure_correction_next
+
+            # Etape 4.7 : Correction des vitesse pour écoulement incompressible 
+            pressure_correction_gradient_x = (
+                (
+                    pressure_correction_next[1:-1, 2:-1]
+                    -
+                    pressure_correction_next[1:-1, 1:-2]
+                ) / (
+                    cell_lenght
+                )
+            )
+
+            velocity_x_next[1:-1, 1:-1] = (
+                velocity_x_tent[1:-1, 1:-1]
+                -
+                TIME_STEP_LENGTH
+                *
+                pressure_correction_gradient_x
+            )
+
+            pressure_correction_gradient_y = (
+                (
+                    pressure_correction_next[2:-1, 1:-1]
+                    -
+                    pressure_correction_next[1:-2, 1:-1]
+                ) / (
+                    cell_lenght
+                )
+            )
 
 
+            velocity_y_next[1:-1, 1:-1] = (
+                velocity_y_tent[1:-1, 1:-1]
+                -
+                TIME_STEP_LENGTH
+                *
+                pressure_correction_gradient_y
+            )
 
-     
+            #Imposer les condition aux frontière 
+            velocity_x_next[1:-1, 0] = 1.0
+            velocity_x_next[1:-1, -1] = velocity_x_next[1:-1, -2]   #Pour avoir condition Neumann (derivé selon x de v_x nulle en sortie de tube) On ecris simplement qu'il y a égalité entre la valeur (,-1) a la frontiere et sa voisine (,-2)              
+            velocity_x_next[0, :] = - velocity_x_next[1, :] #condition adhérence en bas 
+            velocity_x_next[-1,:] = - velocity_x_next[-2, :] #idem en haut
+
+            velocity_y_next[1:-1, -1] = velocity_y_next[1:-1, -2]  # condition neumann en sortie de tube
+            velocity_y_next[0, : ] = 0 
+            velocity_y_next[-1, : ] = 0 
+            velocity_y_next[1:-1, 0] = - velocity_y_next[1:-1, 1] # V_y nul en entrée de tube 
+
+            # Mise a jour dans le temps 
+            velocity_x_prev = velocity_x_next
+            velocity_y_prev = velocity_y_next
+            pressure_prev = pressure_next
 
 
+            ####### Visualisation ###########
+            if iter % PLOT_EVERY == 0: 
+                velocity_x_vertex_centered = (     #on fait des moyennes 
+                    (
+                        velocity_x_next[1: , :]
+                        +
+                        velocity_x_next[ :-1, :]
+                    ) / 2
+                )
+                velocity_y_vertex_centered = (
+                    (
+                        velocity_y_next[ :, 1:]
+                        +
+                        velocity_y_next[:, :-1]
+                    ) / 2
+                )
 
+                plt.contourf(
+                    coordinate_x,
+                    coordinate_y,
+                    velocity_x_vertex_centered,
+                    levels = 10,
+                    cmap = cmr.amber,
+                    vmin = 0.0,
+                    vmax = 1.6,
+                )
+
+                plt.draw()
+                plt.pause(0.05)
+                plt.clf()
+
+
+   
 if __name__== "__main__": 
     main()
-    
+ 
 
 
 
